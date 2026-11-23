@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_PROXY_TARGET || 'http://localhost:8081';
 
   return {
+    // GitHub Pages는 /<repo>/ 하위에 서빙되므로 배포 시 VITE_BASE=/EVACS-Dashboard/ 를 준다.
+    // 코드에서 모델·타일 경로는 import.meta.env.BASE_URL로 조립하므로 이 값만 맞추면 된다.
+    base: env.VITE_BASE || '/',
     plugins: [react()],
     // maplibre-gl은 타일 파싱을 Web Worker에서 한다. Vite 기본값(iife)으로 묶이면
     // dev에서 "Worker failed to load"로 죽고 베이스맵이 통째로 빈 화면이 된다.
