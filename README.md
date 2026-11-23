@@ -25,6 +25,23 @@ VITE_PROXY_TARGET=http://localhost:8099 pnpm dev
 
 목 차량은 기존 인천 광역 임의 좌표 데이터다. 도로에 스냅된 SUMO 차량이 아니므로 인하대 상세 화면에서는 차량이 적거나 없을 수 있다. 차선 위의 실제 차량 이동 검증은 SUMO 어댑터 → 관제 API 데이터로 해야 한다.
 
+## 배포 — 관제서버와 같은 호스트에 도커로
+
+대시보드는 정적 번들이고 `/control/*`은 dev에서 Vite 프록시가 넘겨준다. 정적 호스팅(예: GitHub Pages)에는 그 프록시가 없고, 페이지가 HTTPS면 HTTP 관제서버 호출이 mixed content로 차단된다. 그래서 **관제서버가 도는 호스트에서 nginx 이미지로 같이 서빙**한다. 같은 오리진이라 CORS 설정도 필요 없다.
+
+```sh
+docker build -t seoki/evacs-dashboard:latest .
+docker run -d --network host \
+  -e WEB_PORT=80 -e CONTROL_UPSTREAM=http://127.0.0.1:8081 \
+  --name evacs_dashboard seoki/evacs-dashboard:latest
+```
+
+또는 `docker compose -f docker/compose.yml up -d --build` (같은 변수를 환경에서 읽는다).
+
+- `CONTROL_UPSTREAM` — nginx가 `/control/`을 넘길 관제서버 주소. Docker Desktop처럼 host 네트워킹이 없는 환경에서는 `http://host.docker.internal:8081` + `-p 8080:80`.
+- 빌드 시 `VITE_API_BASE_URL`을 주지 않는다. 브라우저는 같은 호스트의 `/control/*`로 보내고 nginx가 프록시한다.
+- `.github/workflows/deploy-pages.yml`의 GitHub Pages 배포는 UI 확인용이다. 저장소 Variable `API_BASE_URL`(HTTPS + CORS 허용)이 없으면 데이터 조회는 실패한다.
+
 ## 인하대권 도로 상세 — 실제 3D Tiles
 
 원본: `../../EVACS-Test/scenario-inhadae-wide/roads.net.xml` (인하대역 ~ 인하대 정문 ~ 인하대 후문 광역 시나리오).

@@ -1,0 +1,21 @@
+# 관제서버가 돌고 있는 호스트에서 대시보드를 같이 띄운다.
+#   docker compose -f docker/compose.yml up -d --build
+#
+# network_mode: host 라서 호스트의 ${WEB_PORT}(기본 80)를 직접 점유하고,
+# 컨테이너의 127.0.0.1이 호스트이므로 같은 머신의 관제서버(8081)에 그대로 붙는다.
+# Docker Desktop(macOS/Windows)에서는 host 네트워킹이 기본 비활성이므로
+# CONTROL_UPSTREAM=http://host.docker.internal:8081 로 띄우고 -p 로 포트를 매핑한다.
+name: evacs-dashboard
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: seoki/evacs-dashboard:latest
+    container_name: evacs_dashboard
+    network_mode: host
+    environment:
+      WEB_PORT: ${WEB_PORT:-80}
+      CONTROL_UPSTREAM: ${CONTROL_UPSTREAM:-http://127.0.0.1:8081}
+    restart: unless-stopped

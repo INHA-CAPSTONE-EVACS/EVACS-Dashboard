@@ -1,0 +1,32 @@
+server {
+    listen       ${WEB_PORT};
+    server_name  _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # 관제 API는 같은 오리진으로 받아서 그대로 넘긴다(dev의 Vite 프록시와 동일한 역할).
+    location /control/ {
+        proxy_pass ${CONTROL_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # 3D 타일·차량 모델은 내용이 바뀌면 파일명이 바뀌지 않으므로 짧게만 캐시한다.
+    location ~* \.(glb|b3dm|geojson)$ {
+        add_header Cache-Control "public, max-age=300";
+    }
+
+    # 해시가 붙은 번들은 영구 캐시.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
