@@ -1,0 +1,76 @@
+{
+  "bounds": {
+    "east": 126.6726937450517,
+    "north": 37.461718805747424,
+    "south": 37.43849292555911,
+    "west": 126.6420157414972
+  },
+  "buildings": false,
+  "center": {
+    "height": 0,
+    "latitude": 37.449,
+    "longitude": 126.6545
+  },
+  "coordinates": {
+    "enu_max": [
+      1547.6572265625,
+      1411.54931640625,
+      0.016516679897904396
+    ],
+    "enu_min": [
+      -1077.9134521484375,
+      -1135.786865234375,
+      -0.34317120909690857
+    ],
+    "gltf": "east, up, -north (Y-up)",
+    "tile": "local ENU",
+    "transform": "WGS84 ECEF; column-major ENU-to-ECEF root transform"
+  },
+  "elevation": {
+    "datum": "WGS84 ellipsoid",
+    "ground_height_m": 0,
+    "note": "No surveyed elevation or terrain; zero ellipsoid-height road surface, no extrusion"
+  },
+  "explicit_width_lane_count": 0,
+  "external_lane_count": 703,
+  "files": {
+    "content": "roads.b3dm",
+    "lanes": "lanes.geojson",
+    "tileset": "tileset.json"
+  },
+  "format": "3D Tiles 1.0 b3dm / embedded glTF 2.0",
+  "internal_lane_count": 1302,
+  "junction_area_m2": 29613.866364334175,
+  "junction_count": 203,
+  "lane_count": 2005,
+  "lane_filter": "SUMO passenger permissions (allow/disallow); internal connections included",
+  "lane_width_default_m": 3.2,
+  "markings": {
+    "internal_lane_markings": false,
+    "label": "Schematic lane boundaries derived from SUMO centerlines and lane widths; not surveyed road paint",
+    "render_lift_m": 0.02,
+    "separator_dash_m": 3,
+    "separator_period_m": 6,
+    "surveyed": false,
+    "width_m": 0.12
+  },
+  "provenance_notes": [
+    "Source scenario README supplies focus junction coordinates.",
+    "Counts are computed from the actual XML, not the older scenario README.",
+    "One tile for this approximately 1 km network; no artificial buildings or heights."
+  ],
+  "road_area_m2": 258618.79333992433,
+  "source": {
+    "file": "roads.net.xml",
+    "lane_count": 6511,
+    "location": {
+      "convBoundary": "0.00,0.00,2645.84,2507.50",
+      "netOffset": "-291457.35,-4146129.35",
+      "origBoundary": "126.617327,37.430650,126.745641,37.554308",
+      "projParameter": "+proj=utm +zone=52 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+    },
+    "sha256": "c9273d2c14774a1f3a93d360673d1971a9c30c0c43271d66634a36ca545b393d"
+  },
+  "tile_count": 1,
+  "triangle_count": 32553
+}

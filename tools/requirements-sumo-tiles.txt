@@ -1,0 +1,7 @@
+# python -m pip install -r tools/requirements-sumo-tiles.txt
+# python tools/build_sumo_tiles.py  (run from app/; paths also work from any cwd)
+# python -m pytest tests/test_sumo_tiles.py -q
+pyproj==3.7.2
+shapely==2.1.2
+numpy==2.5.5
+pytest==9.0.2
