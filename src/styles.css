@@ -577,6 +577,23 @@ select {
   color: var(--text-dim);
 }
 
+/* 좌표 출력 + "지도 선택" 버튼을 한 줄에 둔다. */
+.field__pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.field__pick .field__output {
+  flex: 1;
+  min-width: 0;
+}
+
+.segmented--tight button {
+  padding-inline: 8px;
+}
+
 .form__error {
   margin: 0;
   padding: 5px 7px;

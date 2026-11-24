@@ -25,6 +25,8 @@ export const MAP_COLORS = {
   trail: [214, 78, 64, 160] as RGBA,
   /** 생성 모드에서 찍은 좌표 */
   picked: [222, 222, 222, 255] as RGBA,
+  /** 생성 모드에서 찍은 출발 좌표 */
+  pickedOrigin: [120, 214, 150, 255] as RGBA,
   /** 긴급상황 위치 핀 */
   pin: [214, 78, 64, 235] as RGBA,
   pinSelected: [240, 118, 96, 255] as RGBA,

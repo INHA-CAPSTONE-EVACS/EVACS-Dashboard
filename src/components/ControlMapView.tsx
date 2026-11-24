@@ -122,7 +122,7 @@ export function ControlMapView(props: Props) {
   const setViewport = useDashboardStore((s) => s.setViewport);
   const layerVisibility = useDashboardStore((s) => s.layerVisibility);
   const selectMode = useDashboardStore((s) => s.selectMode);
-  const pickedPoint = useDashboardStore((s) => s.pickedPoint);
+  const pickedPoints = useDashboardStore((s) => s.pickedPoints);
   const pickPoint = useDashboardStore((s) => s.pickPoint);
   const focusTarget = useDashboardStore((s) => s.focusTarget);
   const trackedVehicleId = useDashboardStore((s) => s.trackedVehicleId);
@@ -307,11 +307,13 @@ export function ControlMapView(props: Props) {
       );
     }
 
-    if (pickedPoint) {
+    // 접수 폼에서 찍은 출발지·목적지. 출발지는 초록, 목적지는 흰 원으로 구분한다.
+    for (const [target, point] of Object.entries(pickedPoints)) {
+      if (!point) continue;
       result.push(
         new ScatterplotLayer<{ latitude: number; longitude: number }>({
-          id: 'picked-point-layer',
-          data: [pickedPoint],
+          id: `picked-${target}-layer`,
+          data: [point],
           getPosition: (p) => [p.longitude, p.latitude],
           getRadius: 6,
           radiusUnits: 'pixels',
@@ -319,7 +321,7 @@ export function ControlMapView(props: Props) {
           stroked: true,
           lineWidthUnits: 'pixels',
           getLineWidth: 1.5,
-          getLineColor: MAP_COLORS.picked,
+          getLineColor: target === 'origin' ? MAP_COLORS.pickedOrigin : MAP_COLORS.picked,
         }),
       );
     }
@@ -338,7 +340,7 @@ export function ControlMapView(props: Props) {
     roadsVisible,
     tileLoaded,
     tileError,
-    pickedPoint,
+    pickedPoints,
     props.emergencies,
     props.selectedEmergencyId,
   ]);
@@ -414,7 +416,8 @@ export function ControlMapView(props: Props) {
 
       {selectMode && (
         <div className="map-banner">
-          좌표 선택 모드 — 지도를 클릭해 긴급차량 목적지를 지정하십시오
+          좌표 선택 모드 — 지도를 클릭해 긴급차량{' '}
+          {selectMode === 'origin' ? '출발지' : '목적지'}를 지정하십시오
         </div>
       )}
 

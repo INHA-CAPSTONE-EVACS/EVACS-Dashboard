@@ -1,9 +1,10 @@
 /**
- * 지도에서 목적지를 선택해 SUMO 긴급상황 생성·종료 (설계서 EmergencyCreateControl).
+ * 지도에서 출발지·목적지를 선택해 SUMO 긴급상황 생성 (설계서 EmergencyCreateControl).
  *
  * 설계서 함수: enterSelectMode(), submit(CreateEmergencyDto), end(emergencyId).
- * **출발 차고지는 SUMO 시나리오에 고정**(서버 `EVACS_SUMO_DEPOT_ID`)이므로 관제에서는 목적지만 지정한다.
  * 요청은 항상 `isSumo: true`이고, 서버가 커밋 후 시뮬레이터에 이 차량 ID로 긴급차량 1대를 투입한다.
+ * **출발지는 두 가지다** — 기본은 SUMO 시나리오 차고지(서버 `EVACS_SUMO_DEPOT_ID`)이고,
+ * 좌표를 찍으면 `originLat/originLng`로 보내 시뮬레이터가 그 좌표를 도로에 붙여 출발시킨다.
  * 서버가 거절(이미 진행 중인 긴급상황 존재 등)하면 사유를 그대로 표시한다.
  */
 import { useState } from 'react';
@@ -18,20 +19,27 @@ interface Props {
   onCreated: (created: EmergencyResponse) => void;
 }
 
+const coord = (p: { latitude: number; longitude: number } | null) =>
+  p ? `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}` : '미지정';
+
 export function EmergencyCreateControl({ onCreated }: Props) {
   const selectMode = useDashboardStore((s) => s.selectMode);
   const enterSelectMode = useDashboardStore((s) => s.enterSelectMode);
-  const exitSelectMode = useDashboardStore((s) => s.exitSelectMode);
-  const pickedPoint = useDashboardStore((s) => s.pickedPoint);
+  const pickedPoints = useDashboardStore((s) => s.pickedPoints);
   const clearPickedPoint = useDashboardStore((s) => s.clearPickedPoint);
 
   const [vehicleId, setVehicleId] = useState('');
   const [emergencyType, setEmergencyType] = useState(EMERGENCY_TYPES[0]);
   const [description, setDescription] = useState('');
+  /** 출발지를 좌표로 지정할지. false면 시나리오 차고지에서 출발한다. */
+  const [originFromMap, setOriginFromMap] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [rejected, setRejected] = useState<string | null>(null);
 
-  const canSubmit = vehicleId.trim().length > 0 && pickedPoint !== null && !submitting;
+  const origin = pickedPoints.origin;
+  const destination = pickedPoints.destination;
+  const originReady = !originFromMap || origin !== null;
+  const canSubmit = vehicleId.trim().length > 0 && destination !== null && originReady && !submitting;
 
   /** 긴급상황 생성 요청. 이미 진행 중인 건이 있어 거절되면 사유 표시. */
   async function submit(dto: CreateEmergencyDto) {
@@ -55,29 +63,21 @@ export function EmergencyCreateControl({ onCreated }: Props) {
   }
 
   return (
-    <Panel
-      title="긴급상황 접수"
-      actions={
-        <button
-          type="button"
-          className={`btn${selectMode ? ' is-on' : ''}`}
-          onClick={() => (selectMode ? exitSelectMode() : enterSelectMode())}
-        >
-          {selectMode ? '선택 취소' : '지도에서 목적지 지정'}
-        </button>
-      }
-    >
+    <Panel title="긴급상황 접수">
       <form
         className="form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!pickedPoint) return;
+          if (!destination || !originReady) return;
           void submit({
             vehicleId: vehicleId.trim(),
             emergencyType,
-            // 출발지는 SUMO 시나리오 차고지로 고정 — 지도에서 고른 지점은 목적지다.
-            destinationLat: pickedPoint.latitude,
-            destinationLng: pickedPoint.longitude,
+            // 출발지를 찍지 않으면 originLat/Lng를 아예 보내지 않는다 = 시나리오 차고지 출발.
+            ...(originFromMap && origin
+              ? { originLat: origin.latitude, originLng: origin.longitude }
+              : {}),
+            destinationLat: destination.latitude,
+            destinationLng: destination.longitude,
             description: description.trim() || undefined,
             isSumo: true,
           });
@@ -105,19 +105,62 @@ export function EmergencyCreateControl({ onCreated }: Props) {
           </select>
         </label>
 
-        <label className="field">
+        <div className="field">
           <span>출발</span>
-          <output className="field__output">SUMO 시나리오 차고지(고정)</output>
-        </label>
+          <div className="segmented segmented--tight">
+            <button
+              type="button"
+              className={originFromMap ? '' : 'is-on'}
+              aria-pressed={!originFromMap}
+              onClick={() => {
+                setOriginFromMap(false);
+                clearPickedPoint('origin');
+              }}
+            >
+              시나리오 차고지
+            </button>
+            <button
+              type="button"
+              className={originFromMap ? 'is-on' : ''}
+              aria-pressed={originFromMap}
+              onClick={() => setOriginFromMap(true)}
+            >
+              지도 지정
+            </button>
+          </div>
+        </div>
 
-        <label className="field">
+        {originFromMap ? (
+          <div className="field">
+            <span>출발 좌표</span>
+            <div className="field__pick">
+              <output className="mono field__output">{coord(origin)}</output>
+              <button
+                type="button"
+                className={`btn${selectMode === 'origin' ? ' is-on' : ''}`}
+                aria-pressed={selectMode === 'origin'}
+                onClick={() => enterSelectMode('origin')}
+              >
+                {selectMode === 'origin' ? '선택 취소' : '지도 선택'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="field">
           <span>목적지</span>
-          <output className="mono field__output">
-            {pickedPoint
-              ? `${pickedPoint.latitude.toFixed(5)}, ${pickedPoint.longitude.toFixed(5)}`
-              : '미지정'}
-          </output>
-        </label>
+          <div className="field__pick">
+            <output className="mono field__output">{coord(destination)}</output>
+            <button
+              type="button"
+              className={`btn${selectMode === 'destination' ? ' is-on' : ''}`}
+              aria-pressed={selectMode === 'destination'}
+              onClick={() => enterSelectMode('destination')}
+            >
+              {selectMode === 'destination' ? '선택 취소' : '지도 선택'}
+            </button>
+          </div>
+        </div>
 
         <label className="field">
           <span>비고</span>
