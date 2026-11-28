@@ -24,6 +24,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type {
   Bbox,
   ConeResponse,
+  DispatchRouteResponse,
   EmergencyResponse,
   EmergencyRouteResponse,
   VehicleResponse,
@@ -68,6 +69,8 @@ interface Props {
   cone: ConeResponse | null;
   alertedVehicleIds: string[];
   route: EmergencyRouteResponse | null;
+  /** 워커가 바꾼 최신 경로. 접수 경로와 같은 `경로` 토글로 함께 보여 준다. */
+  dispatchRoute: DispatchRouteResponse | null;
   densityCells: Record<string, number>;
   /** 궤적을 그릴 긴급차량. 없으면 null. */
   trailVehicleId: string | null;
@@ -307,6 +310,26 @@ export function ControlMapView(props: Props) {
       );
     }
 
+    // 워커가 경로를 다시 계산했으면 접수 경로 위에 겹쳐 그린다 — 어디가 바뀌었는지 눈으로 비교하는 용도.
+    const dispatchCoordinates = props.dispatchRoute?.available
+      ? props.dispatchRoute.coordinates
+      : [];
+    if (layerVisibility.route && dispatchCoordinates.length > 1) {
+      result.push(
+        new PathLayer<{ path: [number, number][] }>({
+          id: 'dispatch-route-layer',
+          data: [{ path: dispatchCoordinates.map((p) => [p.longitude, p.latitude]) }],
+          getPath: (d) => d.path,
+          getColor: MAP_COLORS.dispatchRoute,
+          getWidth: 4,
+          widthUnits: 'pixels',
+          widthMinPixels: 2,
+          capRounded: true,
+          jointRounded: true,
+        }),
+      );
+    }
+
     // 접수 폼에서 찍은 출발지·목적지. 출발지는 초록, 목적지는 흰 원으로 구분한다.
     for (const [target, point] of Object.entries(pickedPoints)) {
       if (!point) continue;
@@ -333,6 +356,7 @@ export function ControlMapView(props: Props) {
     props.vehicles,
     props.cone,
     props.route,
+    props.dispatchRoute,
     props.alertedVehicleIds,
     props.densityCells,
     props.trailVehicleId,

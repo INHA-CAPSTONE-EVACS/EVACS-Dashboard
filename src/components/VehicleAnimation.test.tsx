@@ -25,7 +25,7 @@ it('수신 사이 rAF로 실제 오버레이 모델과 알림을 보간하고 �
   const cancel = vi.fn(); vi.stubGlobal('cancelAnimationFrame', cancel);
   const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
   const car: VehicleResponse = { vehicleId: 'car', vehicleType: 'NORMAL', longitude: 126.65, latitude: 37.445, speedMps: 10, headingDegrees: 0, stale: false, laneIndex: 0, laneCount: 3, measuredAt: null, occurredAt: null };
-  const props = { previousVehicles: [], cone: null, alertedVehicleIds: ['car'], route: null, densityCells: {}, trailVehicleId: null, emergencies: [], selectedEmergencyId: null };
+  const props = { previousVehicles: [], cone: null, alertedVehicleIds: ['car'], route: null, dispatchRoute: null, densityCells: {}, trailVehicleId: null, emergencies: [], selectedEmergencyId: null };
   const screen = render(<ControlMapView {...props} vehicles={[car]} />);
   // 초기 위치는 광역 보기라 차량이 점으로 나온다. 모델이 나오는 배율로 지도를 옮긴다.
   act(() => { state.onMove({ viewState: { longitude: 126.65, latitude: 37.445, zoom: 18.5, pitch: 45, bearing: 0 } }); });

@@ -17,6 +17,7 @@ import {
 import {
   useAlertedVehicles,
   useCone,
+  useDispatchRoute,
   useEmergencies,
   useEmergency,
   useEvents,
@@ -37,6 +38,8 @@ const INTERVAL = {
   emergencies: 2000,
   detail: 3000,
   route: 10000,
+  // 워커가 운행 중 다시 계산하므로 접수 경로보다 자주 본다.
+  dispatchRoute: 3000,
   events: 5000,
   cone: 2000,
   alerted: 2000,
@@ -104,6 +107,7 @@ export function DashboardPage() {
   const emergencies = useEmergencies(emergencyQuery, INTERVAL.emergencies);
   const detail = useEmergency(selectedId, INTERVAL.detail);
   const route = useRoute(selectedId, INTERVAL.route);
+  const dispatchRoute = useDispatchRoute(selectedId, INTERVAL.dispatchRoute);
   const events = useEvents(selectedId, INTERVAL.events);
   const cone = useCone(selectedId, INTERVAL.cone, layerVisibility.cone);
   const alerted = useAlertedVehicles(selectedId, INTERVAL.alerted, layerVisibility.alerts);
@@ -251,6 +255,7 @@ export function DashboardPage() {
             cone={cone.data}
             alertedVehicleIds={alertedIds}
             route={route.data}
+            dispatchRoute={dispatchRoute.data}
             densityCells={densityCells}
             trailVehicleId={activeEmergency?.vehicleId ?? null}
             emergencies={emergencies.data?.emergencies ?? []}

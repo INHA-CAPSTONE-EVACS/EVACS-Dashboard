@@ -32,7 +32,7 @@ import { useDashboardStore } from '../store/DashboardStore';
 
 /** 지도 컴포넌트의 필수 props 기본값. 각 테스트는 필요한 것만 덮어쓴다. */
 const mapProps = {
-  vehicles: [], previousVehicles: [], cone: null, alertedVehicleIds: [], route: null,
+  vehicles: [], previousVehicles: [], cone: null, alertedVehicleIds: [], route: null, dispatchRoute: null,
   densityCells: {}, trailVehicleId: null, emergencies: [], selectedEmergencyId: null,
 };
 
@@ -97,6 +97,27 @@ it('긴급상황 목적지에 핀을 찍는다', () => {
   expect(pins.props.visible).toBe(true);
   expect(pins.props.data).toEqual([expect.objectContaining({ id: 'e1', latitude: 37.4477, longitude: 126.6532 })]);
   expect(pins.props.getPosition(pins.props.data[0])).toEqual([126.6532, 37.4477]);
+});
+
+it('워커가 바꾼 경로를 접수 경로와 별도 레이어로 그린다', () => {
+  // available=false(워커 미산출)일 때 레이어가 생기면 "안 바뀐 경로"가 그려진 것처럼 보인다.
+  const dispatchRoute = {
+    dispatchId: 'e1', available: true, routeId: 'r1', routeVersion: 2,
+    coordinates: [{ latitude: 37.4454, longitude: 126.6505 }, { latitude: 37.4464, longitude: 126.6515 }],
+    coordinatesParsed: true, roadSegments: ['edge-a'], estimatedDuration: 240,
+    changeReason: 'CONGESTION', createdAt: null,
+  };
+  const layerIds = () => calls.setProps.mock.lastCall?.[0].layers.map((l: { id: string }) => l.id);
+
+  render(<ControlMapView {...mapProps} dispatchRoute={{ ...dispatchRoute, available: false, coordinates: [] }} />);
+  expect(layerIds()).not.toContain('dispatch-route-layer');
+
+  cleanup();
+  render(<ControlMapView {...mapProps} dispatchRoute={dispatchRoute} />);
+  const layer = calls.setProps.mock.lastCall?.[0].layers.find(
+    (l: { id: string }) => l.id === 'dispatch-route-layer',
+  );
+  expect(layer.props.data[0].path).toEqual([[126.6505, 37.4454], [126.6515, 37.4464]]);
 });
 
 it('추적을 켜면 차량뷰로 맞추고 프레임마다 차량 좌표로 카메라를 옮긴다', () => {

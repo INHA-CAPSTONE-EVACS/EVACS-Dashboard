@@ -18,9 +18,11 @@ export const MAP_COLORS = {
   /** 콘(영향 영역) H3 셀 */
   cone: [214, 78, 64, 34] as RGBA,
   coneLine: [214, 78, 64, 150] as RGBA,
-  /** 경로 폴리라인 */
+  /** 경로 폴리라인(접수 시 경로) */
   route: [86, 156, 214, 220] as RGBA,
   routePoint: [86, 156, 214, 255] as RGBA,
+  /** 워커가 바꾼 경로 폴리라인. 접수 경로와 한 화면에 겹치므로 색을 달리 둔다. */
+  dispatchRoute: [120, 214, 150, 230] as RGBA,
   /** 긴급차량 궤적 */
   trail: [214, 78, 64, 160] as RGBA,
   /** 생성 모드에서 찍은 좌표 */
