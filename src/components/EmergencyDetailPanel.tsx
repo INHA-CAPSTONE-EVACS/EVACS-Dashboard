@@ -8,6 +8,8 @@
 import type {
   AlertedVehiclesResponse,
   ConeResponse,
+  DispatchRouteHistoryResponse,
+  DispatchRouteResponse,
   EmergencyResponse,
   EmergencyRouteResponse,
   EventLogResponse,
@@ -19,6 +21,9 @@ import { Panel } from './Panel';
 interface Props {
   emergency: EmergencyResponse | null;
   route: EmergencyRouteResponse | null;
+  /** 워커가 바꾼 최신 경로. 접수 경로(route)와 다른 자원이다. */
+  dispatchRoute: DispatchRouteResponse | null;
+  dispatchRouteHistory: DispatchRouteHistoryResponse | null;
   events: EventLogResponse[] | null;
   cone: ConeResponse | null;
   alerted: AlertedVehiclesResponse | null;
@@ -32,6 +37,8 @@ interface Props {
 export function EmergencyDetailPanel({
   emergency,
   route,
+  dispatchRoute,
+  dispatchRouteHistory,
   events,
   cone,
   alerted,
@@ -54,6 +61,9 @@ export function EmergencyDetailPanel({
   }
 
   const eta = route?.points.at(-1)?.etaSeconds ?? null;
+  const changed = dispatchRoute?.available ? dispatchRoute : null;
+  // 버전 수 = 워커가 경로를 쌓은 횟수. 첫 계산도 1회로 센다.
+  const changeCount = dispatchRouteHistory?.count ?? 0;
   const tracked = trackedVehicleId === emergency.vehicleId;
   const pinLat = emergency.destinationLat ?? emergency.originLat;
   const pinLng = emergency.destinationLng ?? emergency.originLng;
@@ -150,6 +160,26 @@ export function EmergencyDetailPanel({
           <dd className="mono">{eta != null ? `${num(eta)}s` : '-'}</dd>
         </div>
         <div>
+          <dt>변경 경로</dt>
+          <dd className="mono">
+            {changed ? `v${changed.routeVersion} · ${num(changed.coordinates.length)}점` : '미산출'}
+          </dd>
+        </div>
+        <div>
+          <dt>변경 횟수</dt>
+          <dd className="mono">{num(changeCount)}</dd>
+        </div>
+        <div>
+          <dt>변경 예상 소요</dt>
+          <dd className="mono">
+            {changed?.estimatedDuration != null ? `${num(changed.estimatedDuration)}s` : '-'}
+          </dd>
+        </div>
+        <div>
+          <dt>변경 사유</dt>
+          <dd className="mono">{changed?.changeReason ?? '-'}</dd>
+        </div>
+        <div>
           <dt>콘 셀</dt>
           <dd className="mono">
             {cone?.available ? num(cone.cells.length) : '미산출'}
@@ -160,6 +190,35 @@ export function EmergencyDetailPanel({
           <dd className="mono">{alerted ? num(alerted.count) : '-'}</dd>
         </div>
       </dl>
+
+      {/* 좌표 JSON이 기대 형태가 아니면 서버가 비워 보낸다 — 지도에 안 그려지는 이유를 여기서 알린다. */}
+      {changed && !changed.coordinatesParsed ? (
+        <p className="detail-note">
+          워커가 저장한 경로 좌표 형식을 해석할 수 없어 지도에 표시하지 않습니다.
+        </p>
+      ) : null}
+
+      {/* 경로 변경 이력: 버전 오름차순 요약 */}
+      {changeCount > 0 ? (
+        <>
+          <div className="subhead">
+            경로 변경 이력 <span className="mono subhead__count">{changeCount}</span>
+          </div>
+          <ul className="eventlog">
+            {(dispatchRouteHistory?.versions ?? []).map((v) => (
+              <li key={v.routeVersion}>
+                <span className="mono eventlog__time">{stamp(v.createdAt)}</span>
+                <span className="eventlog__type">
+                  v{v.routeVersion} · {v.changeReason ?? '최초 계산'}
+                </span>
+                <span className="mono eventlog__vehicle">
+                  {num(v.coordinateCount)}점 · {num(v.estimatedDuration)}s
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       {/* renderEvents: 이벤트 전송 이력 */}
       <div className="subhead">

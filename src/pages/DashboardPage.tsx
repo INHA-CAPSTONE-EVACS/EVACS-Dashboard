@@ -18,6 +18,7 @@ import {
   useAlertedVehicles,
   useCone,
   useDispatchRoute,
+  useDispatchRouteHistory,
   useEmergencies,
   useEmergency,
   useEvents,
@@ -108,6 +109,7 @@ export function DashboardPage() {
   const detail = useEmergency(selectedId, INTERVAL.detail);
   const route = useRoute(selectedId, INTERVAL.route);
   const dispatchRoute = useDispatchRoute(selectedId, INTERVAL.dispatchRoute);
+  const dispatchRouteHistory = useDispatchRouteHistory(selectedId, INTERVAL.dispatchRoute);
   const events = useEvents(selectedId, INTERVAL.events);
   const cone = useCone(selectedId, INTERVAL.cone, layerVisibility.cone);
   const alerted = useAlertedVehicles(selectedId, INTERVAL.alerted, layerVisibility.alerts);
@@ -131,6 +133,18 @@ export function DashboardPage() {
       : cone.data?.available
         ? num(cone.data.cells.length)
         : '미산출';
+
+  /**
+   * 워커 경로도 "안 보이는" 이유가 여러 개다 — 긴급상황을 안 골랐거나, 워커가 아직
+   * 안 쌓았거나(available=false), 쌓았는데 좌표 형식이 깨졌거나.
+   */
+  const dispatchStatus = !selectedId
+    ? '대상 없음'
+    : !dispatchRoute.data?.available
+      ? '미산출'
+      : !dispatchRoute.data.coordinatesParsed
+        ? '좌표 해석 실패'
+        : `v${dispatchRoute.data.routeVersion} · ${num(dispatchRouteHistory.data?.count ?? 0)}회`;
 
   /**
    * 생성 결과를 즉시 목록에 비추고 선택까지 옮긴다(이후는 목록 조회가 갱신).
@@ -274,6 +288,8 @@ export function DashboardPage() {
             <span className="mono">
               콘 {coneStatus} · 알림 {num(alertedIds.length)}
             </span>
+            {/* 경로가 "안 바뀐 것"과 "선택 안 함"을 구분해 준다 — 콘 표시와 같은 규칙. */}
+            <span className="mono">경로 변경 {dispatchStatus}</span>
             <span className={`statusbar__state${vehicles.error ? ' is-warn' : ''}`}>
               {vehicles.error ? `갱신 지연 · ${vehicles.error}` : '실시간 갱신 중'}
             </span>
@@ -284,6 +300,8 @@ export function DashboardPage() {
           <EmergencyDetailPanel
             emergency={detail.data}
             route={route.data}
+            dispatchRoute={dispatchRoute.data}
+            dispatchRouteHistory={dispatchRouteHistory.data}
             events={events.data}
             cone={cone.data}
             alerted={alerted.data}
