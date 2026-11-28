@@ -55,6 +55,8 @@ setInterval(() => {
 /** 긴급상황 저장소. 차량당 ACTIVE 1건 제약을 실제 서버처럼 409로 막는다. */
 const emergencies = new Map();
 const routes = new Map();
+/** 긴급상황별 Emergency Worker 경로 이력(append-only). id → 버전 배열 */
+const dispatchRoutes = new Map();
 const events = new Map();
 
 seed();
@@ -140,6 +142,34 @@ function create(dto) {
   ]);
   return emergency;
 }
+
+/**
+ * Emergency Worker가 운행 중 경로를 다시 계산하는 걸 흉내 낸다.
+ * 처음엔 아무것도 없어야 한다(화면의 available=false/'미산출' 경로를 확인할 수 있게).
+ * 이후 15초마다 접수 경로를 옆으로 조금 밀어 새 버전을 append한다.
+ */
+setInterval(() => {
+  for (const e of emergencies.values()) {
+    if (e.status !== 'ACTIVE') continue;
+    const base = routes.get(e.id) ?? [];
+    if (base.length === 0) continue;
+    const history = dispatchRoutes.get(e.id) ?? [];
+    const version = history.length + 1;
+    const shift = 0.0004 * version;
+    history.push({
+      routeId: crypto.randomUUID(),
+      dispatchId: e.id,
+      routeVersion: version,
+      coordinates: base.map((p) => ({ latitude: p.latitude + shift, longitude: p.longitude })),
+      coordinatesParsed: true,
+      roadSegments: [`edge-${version}a`, `edge-${version}b`],
+      estimatedDuration: Math.max(60, 360 - version * 20),
+      changeReason: version === 1 ? null : 'CONGESTION',
+      createdAt: new Date().toISOString(),
+    });
+    dispatchRoutes.set(e.id, history);
+  }
+}, 15000);
 
 /** 진행 중인 긴급상황마다 알림 이벤트를 꾸준히 쌓는다. */
 setInterval(() => {
@@ -260,6 +290,42 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && sub === '/route') {
         const points = routes.get(id) ?? [];
         return json(res, 200, { emergencyId: id, pointCount: points.length, points });
+      }
+
+      // 워커가 바꾼 최신 경로. 아직 없으면 404가 아니라 available=false다(서버와 같은 관례).
+      if (req.method === 'GET' && sub === '/dispatch-route') {
+        const history = dispatchRoutes.get(id) ?? [];
+        const latest = history[history.length - 1];
+        if (!latest) {
+          return json(res, 200, {
+            dispatchId: id,
+            available: false,
+            routeId: null,
+            routeVersion: null,
+            coordinates: [],
+            coordinatesParsed: true,
+            roadSegments: [],
+            estimatedDuration: null,
+            changeReason: null,
+            createdAt: null,
+          });
+        }
+        return json(res, 200, { ...latest, available: true });
+      }
+
+      if (req.method === 'GET' && sub === '/dispatch-route/history') {
+        const history = dispatchRoutes.get(id) ?? [];
+        return json(res, 200, {
+          dispatchId: id,
+          count: history.length,
+          versions: history.map((v) => ({
+            routeVersion: v.routeVersion,
+            coordinateCount: v.coordinates.length,
+            estimatedDuration: v.estimatedDuration,
+            changeReason: v.changeReason,
+            createdAt: v.createdAt,
+          })),
+        });
       }
 
       if (req.method === 'GET' && sub === '/events') {
