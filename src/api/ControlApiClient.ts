@@ -21,6 +21,7 @@ import type {
   EmergencyRouteResponse,
   EventLogResponse,
   VehicleListResponse,
+  VehicleAlertListResponse,
   VehicleQueryDto,
   VehicleResponse,
   VehicleSummaryResponse,
@@ -111,6 +112,14 @@ export const ControlApiClient = {
       `/control/vehicles/${encodeURIComponent(vehicleId)}`,
       { signal, label: 'vehicle' },
     );
+  },
+
+  /** 서버: getAlerts() — 알림이 떠 있는 차량 전체. 지도 강조와 알림 패널이 쓴다. */
+  fetchVehicleAlerts(signal?: AbortSignal) {
+    return request<VehicleAlertListResponse>('/control/vehicles/alerts', {
+      signal,
+      label: 'vehicleAlerts',
+    });
   },
 
   /** 서버: getSummary() */

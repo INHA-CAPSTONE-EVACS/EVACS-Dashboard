@@ -171,6 +171,37 @@ export interface AlertedVehiclesResponse {
   vehicleIds: string[];
 }
 
+/**
+ * VehicleAlertResponse.java — 차량 1대에 "지금 떠 있는" 알림.
+ *
+ * 관제서버가 `evacs:stream:yield-alert`(Alert Worker 발행)를 따라 읽어 만든 현재 상태다.
+ * 긴급상황별 `AlertedVehiclesResponse`(수신 확인 집합)와 다른 자원이다 — 이쪽은 차량 기준이고
+ * 어떤 알람인지(`alertType`)와 Worker가 만든 안내 문구(`message`)가 들어 있다.
+ */
+export interface VehicleAlertResponse {
+  vehicleId: string;
+  alertType: 'YIELD_ALERT_ISSUED' | 'YIELD_ALERT_CLEARED' | 'EMERGENCY_ROUTE_UPDATED' | string;
+  alertId: string | null;
+  alertVersion: number | null;
+  dispatchId: string | null;
+  approachDirection: string | null;
+  recommendedAction: string | null;
+  message: string | null;
+  reason: string | null;
+  occurredAt: string | null;
+  expiresAt: string | null;
+  eventId: string | null;
+}
+
+/** VehicleAlertListResponse.java */
+export interface VehicleAlertListResponse {
+  count: number;
+  alerts: VehicleAlertResponse[];
+  queriedAt: string;
+  /** 서버가 알림 스트림을 마지막으로 읽은 시각. null이면 아직 한 번도 못 읽었다. */
+  streamPolledAt: string | null;
+}
+
 /** VehicleQueryDto.java */
 export interface VehicleQueryDto {
   minLat?: number;

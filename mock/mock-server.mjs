@@ -205,6 +205,38 @@ function nearbyVehicleIds(e, ringSize) {
   return out;
 }
 
+/**
+ * 지금 알림이 떠 있는 차량. 진행 중인 긴급상황 주변 차량 중 앞의 몇 대만 고른다
+ * (전부 알림으로 깔면 지도 강조가 의미를 잃는다).
+ */
+function currentAlerts() {
+  const out = [];
+  for (const e of emergencies.values()) {
+    if (e.status !== 'ACTIVE') continue;
+    const near = nearbyVehicleIds(e, 3).slice(0, 5);
+    near.forEach((vehicleId, index) => {
+      out.push({
+        vehicleId,
+        alertType: index === 0 ? 'EMERGENCY_ROUTE_UPDATED' : 'YIELD_ALERT_ISSUED',
+        alertId: `ALT-${e.id.slice(0, 8)}-${index}`,
+        alertVersion: 1,
+        dispatchId: e.id,
+        approachDirection: ['REAR', 'FRONT', 'LEFT', 'RIGHT'][index % 4],
+        recommendedAction: 'YIELD_WHEN_SAFE',
+        message:
+          index === 0
+            ? '긴급차량 경로가 변경되었습니다.'
+            : '긴급차량이 접근하고 있습니다. 안전한 상황에서 양보해 주세요.',
+        reason: null,
+        occurredAt: new Date(Date.now() - index * 3000).toISOString(),
+        expiresAt: new Date(Date.now() + 20000).toISOString(),
+        eventId: `evt-${e.id.slice(0, 8)}-${index}`,
+      });
+    });
+  }
+  return out;
+}
+
 // ---------- HTTP ----------
 
 const server = http.createServer(async (req, res) => {
@@ -254,6 +286,29 @@ const server = http.createServer(async (req, res) => {
         cellCount: cells.length,
         cells,
         queriedAt: new Date().toISOString(),
+      });
+    }
+
+    // 알림 현황. 서버는 evacs:stream:yield-alert를 따라 읽어 만들고, 목은 진행 중인
+    // 긴급상황 주변 차량 몇 대에 양보 요청이 떠 있는 것처럼 흉내 낸다.
+    if (req.method === 'GET' && path === '/control/vehicles/alerts') {
+      const alerts = currentAlerts();
+      return json(res, 200, {
+        count: alerts.length,
+        alerts,
+        queriedAt: new Date().toISOString(),
+        streamPolledAt: new Date().toISOString(),
+      });
+    }
+
+    if (req.method === 'GET' && /^\/control\/vehicles\/[^/]+\/alert$/.test(path)) {
+      const vehicleId = decodeURIComponent(path.split('/')[3]);
+      const alert = currentAlerts().find((a) => a.vehicleId === vehicleId) ?? null;
+      return json(res, 200, {
+        vehicleId,
+        alerted: alert !== null,
+        alert,
+        streamPolledAt: new Date().toISOString(),
       });
     }
 

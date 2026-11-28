@@ -412,6 +412,68 @@ select {
   background: var(--text-faint);
 }
 
+/* 알림이 떠 있는 차량. 지도 강조(MAP_COLORS.alert)와 같은 색이어야 범례가 맞는다. */
+.dot--alert {
+  background: var(--warn);
+}
+
+/* ---------- 차량 알림 목록 ---------- */
+
+.alist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alist__row {
+  display: grid;
+  grid-template-columns: 8px auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  cursor: pointer;
+}
+
+.alist__row:hover {
+  background: var(--bg-raised);
+}
+
+.alist__row.is-selected {
+  background: var(--bg-raised);
+  box-shadow: inset 2px 0 0 var(--warn);
+}
+
+.alist__type {
+  font-size: 15px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.alist__vehicle {
+  font-size: 14px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alist__time {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+/* 안내 문구는 줄을 넘겨 네 칸 전체를 쓴다. */
+.alist__message {
+  grid-column: 2 / -1;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
 /* ---------- 긴급상황 목록 ---------- */
 
 .elist {

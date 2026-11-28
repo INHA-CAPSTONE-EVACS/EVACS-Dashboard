@@ -9,6 +9,7 @@ import { ControlApiClient } from '../api/ControlApiClient';
 import type {
   Bbox,
   DensityResponse,
+  VehicleAlertListResponse,
   VehicleListResponse,
   VehicleResponse,
   VehicleSummaryResponse,
@@ -79,6 +80,22 @@ export function useVehicleSummary(
 ): PollingResult<VehicleSummaryResponse> {
   return usePolling<VehicleSummaryResponse>(
     (signal) => ControlApiClient.fetchVehicleSummary(signal),
+    intervalMs,
+    [],
+  );
+}
+
+/**
+ * 알림이 떠 있는 차량 조회.
+ *
+ * bbox와 무관하게 전체를 받는다 — 화면 밖 차량의 알림도 "알림 왔음"으로 세야 하고,
+ * 응답은 동시에 떠 있는 알림 수(보통 수십 건)에 비례해 작다.
+ */
+export function useVehicleAlerts(
+  intervalMs: number,
+): PollingResult<VehicleAlertListResponse> {
+  return usePolling<VehicleAlertListResponse>(
+    (signal) => ControlApiClient.fetchVehicleAlerts(signal),
     intervalMs,
     [],
   );

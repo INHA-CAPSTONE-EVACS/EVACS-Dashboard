@@ -10,6 +10,7 @@ import type { EmergencyResponse, EmergencyStatus } from '../api/contracts';
 import { useDashboardStore, type LayerKey } from '../store/DashboardStore';
 import {
   useTrackedVehicle,
+  useVehicleAlerts,
   useVehicleDensity,
   useVehicleSummary,
   useVehicles,
@@ -29,6 +30,7 @@ import { EmergencyListPanel } from '../components/EmergencyListPanel';
 import { EmergencyDetailPanel } from '../components/EmergencyDetailPanel';
 import { EmergencyCreateControl } from '../components/EmergencyCreateControl';
 import { KpiPanel } from '../components/KpiPanel';
+import { VehicleAlertPanel } from '../components/VehicleAlertPanel';
 import { hhmmss, num } from '../utils/format';
 
 /** 조회 주기(ms). 자주 바뀌는 것만 짧게 둔다. */
@@ -44,6 +46,8 @@ const INTERVAL = {
   events: 5000,
   cone: 2000,
   alerted: 2000,
+  // 알림은 운전자에게 떠 있는 시간이 수십 초뿐이라 차량 위치만큼 자주 본다.
+  vehicleAlerts: 1000,
 } as const;
 
 const LAYER_LABELS: Record<LayerKey, string> = {
@@ -113,6 +117,9 @@ export function DashboardPage() {
   const events = useEvents(selectedId, INTERVAL.events);
   const cone = useCone(selectedId, INTERVAL.cone, layerVisibility.cone);
   const alerted = useAlertedVehicles(selectedId, INTERVAL.alerted, layerVisibility.alerts);
+  // 차량 기준 알림 현황. 긴급상황을 고르지 않아도, 레이어를 꺼도 계속 받는다
+  // (지도 강조는 레이어 토글을 따르지만 패널·상태바는 항상 보여야 한다).
+  const vehicleAlerts = useVehicleAlerts(INTERVAL.vehicleAlerts);
 
   const densityCells = useMemo(() => {
     const out: Record<string, number> = {};
@@ -120,7 +127,17 @@ export function DashboardPage() {
     return out;
   }, [density.data]);
 
-  const alertedIds = useMemo(() => alerted.data?.vehicleIds ?? [], [alerted.data]);
+  /**
+   * 지도에서 강조할 차량. 두 출처를 합친다 —
+   * 알림 스트림이 알려 준 "지금 알림이 떠 있는 차량"(차량 기준, 상시)과
+   * 고른 긴급상황의 "수신 확인 차량 집합"(긴급상황 기준). 같은 차량은 한 번만 센다.
+   */
+  const alertedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const alert of vehicleAlerts.data?.alerts ?? []) ids.add(alert.vehicleId);
+    for (const id of alerted.data?.vehicleIds ?? []) ids.add(id);
+    return [...ids];
+  }, [vehicleAlerts.data, alerted.data]);
 
   /**
    * 콘은 "안 보이는" 이유가 셋이다 — 레이어를 껐거나, 긴급상황을 안 골랐거나,
@@ -286,7 +303,8 @@ export function DashboardPage() {
                 : '밀도 숨김'}
             </span>
             <span className="mono">
-              콘 {coneStatus} · 알림 {num(alertedIds.length)}
+              콘 {coneStatus} · 알림 {num(vehicleAlerts.data?.alerts.length ?? 0)}
+              {vehicleAlerts.error ? ' (갱신 지연)' : ''}
             </span>
             {/* 경로가 "안 바뀐 것"과 "선택 안 함"을 구분해 준다 — 콘 표시와 같은 규칙. */}
             <span className="mono">경로 변경 {dispatchStatus}</span>
@@ -310,6 +328,12 @@ export function DashboardPage() {
             now={now}
             onEnd={(id) => void onEnd(id)}
             ending={ending}
+          />
+          <VehicleAlertPanel
+            alerts={vehicleAlerts.data}
+            error={vehicleAlerts.error}
+            busy={vehicleAlerts.inFlight}
+            now={now}
           />
           <KpiPanel summary={summary.data} />
         </aside>
