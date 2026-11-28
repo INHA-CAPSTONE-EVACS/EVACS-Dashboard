@@ -13,6 +13,8 @@ import type {
   CreateEmergencyDto,
   DensityQueryDto,
   DensityResponse,
+  DispatchRouteHistoryResponse,
+  DispatchRouteResponse,
   EmergencyListResponse,
   EmergencyQueryDto,
   EmergencyResponse,
@@ -149,6 +151,22 @@ export const ControlApiClient = {
       signal,
       label: 'route',
     });
+  },
+
+  /** 서버: getDispatchRoute(id) — 워커가 바꾼 최신 경로. 지도·상세 패널이 쓴다. */
+  fetchDispatchRoute(id: string, signal?: AbortSignal) {
+    return request<DispatchRouteResponse>(
+      `/control/emergencies/${id}/dispatch-route`,
+      { signal, label: 'dispatchRoute' },
+    );
+  },
+
+  /** 서버: getDispatchRouteHistory(id) — 경로 변경 횟수 확인용 요약. */
+  fetchDispatchRouteHistory(id: string, signal?: AbortSignal) {
+    return request<DispatchRouteHistoryResponse>(
+      `/control/emergencies/${id}/dispatch-route/history`,
+      { signal, label: 'dispatchRouteHistory' },
+    );
   },
 
   /** 서버: getEvents(id) */

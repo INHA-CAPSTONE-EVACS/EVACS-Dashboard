@@ -8,6 +8,8 @@ import { ControlApiClient } from '../api/ControlApiClient';
 import type {
   AlertedVehiclesResponse,
   ConeResponse,
+  DispatchRouteHistoryResponse,
+  DispatchRouteResponse,
   EmergencyListResponse,
   EmergencyQueryDto,
   EmergencyResponse,
@@ -48,6 +50,36 @@ export function useRoute(
 ): PollingResult<EmergencyRouteResponse> {
   return usePolling<EmergencyRouteResponse>(
     (signal) => ControlApiClient.fetchRoute(id as string, signal),
+    intervalMs,
+    [id],
+    id !== null,
+  );
+}
+
+/**
+ * Emergency Worker가 바꾼 최신 경로 조회.
+ * `useRoute`(접수 경로)와 달리 운행 중 갱신되므로 주기를 짧게 둔다.
+ * available=false는 워커가 아직 경로를 안 쌓은 것이지 긴급상황이 없는 게 아니다.
+ */
+export function useDispatchRoute(
+  id: string | null,
+  intervalMs: number,
+): PollingResult<DispatchRouteResponse> {
+  return usePolling<DispatchRouteResponse>(
+    (signal) => ControlApiClient.fetchDispatchRoute(id as string, signal),
+    intervalMs,
+    [id],
+    id !== null,
+  );
+}
+
+/** 경로 변경 이력 요약 조회. 좌표는 개수만 오므로 가볍다. */
+export function useDispatchRouteHistory(
+  id: string | null,
+  intervalMs: number,
+): PollingResult<DispatchRouteHistoryResponse> {
+  return usePolling<DispatchRouteHistoryResponse>(
+    (signal) => ControlApiClient.fetchDispatchRouteHistory(id as string, signal),
     intervalMs,
     [id],
     id !== null,

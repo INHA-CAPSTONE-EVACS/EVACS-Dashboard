@@ -108,6 +108,45 @@ export interface EventLogResponse {
   occurredAt: string;
 }
 
+/**
+ * DispatchRouteResponse.java — Emergency Worker가 실제로 바꾼 최신 경로.
+ *
+ * `/route`(접수 때 받은 경로)와 다른 자원이다. available=false는 "워커가 아직 안 쌓음"이고,
+ * coordinatesParsed=false는 저장된 좌표 JSON이 기대 형태가 아니라 서버가 비웠다는 뜻이다.
+ */
+export interface DispatchRouteResponse {
+  dispatchId: string;
+  available: boolean;
+  routeId: string | null;
+  routeVersion: number | null;
+  coordinates: DispatchRouteCoordinate[];
+  coordinatesParsed: boolean;
+  roadSegments: string[];
+  estimatedDuration: number | null;
+  changeReason: string | null;
+  createdAt: string | null;
+}
+
+export interface DispatchRouteCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
+/** DispatchRouteHistoryResponse.java — 경로가 몇 번 바뀌었는지 보는 요약(버전 오름차순). */
+export interface DispatchRouteHistoryResponse {
+  dispatchId: string;
+  count: number;
+  versions: DispatchRouteVersion[];
+}
+
+export interface DispatchRouteVersion {
+  routeVersion: number;
+  coordinateCount: number;
+  estimatedDuration: number;
+  changeReason: string | null;
+  createdAt: string | null;
+}
+
 /** ConeResponse.java — available=false는 "아직 계산 안 됨"이지 "긴급상황 없음"이 아니다. */
 export interface ConeResponse {
   emergencyId: string;
